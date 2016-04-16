@@ -1,6 +1,9 @@
 '''
 Created on Apr 15, 2016
-Evaluate the performance of Top-K recommendation.
+Evaluate the performance of Top-K recommendation:
+    Protocol: leave-1-out evaluation
+    Measures: Hit Ratio and NDCG
+    (more details are in: Xiangnan He, et al. Fast Matrix Factorization for Online Recommendation with Implicit Feedback. SIGIR'16)
 
 @author: hexiangnan
 '''
