@@ -17,3 +17,7 @@ To run an example:
 
   
 Welcome any comments for improving the efficency! 
+
+Author: Xiangnan He (http://www.comp.nus.edu.sg/~xiangnan/)
+
+Contact: xiangnanhe@gmail.com
