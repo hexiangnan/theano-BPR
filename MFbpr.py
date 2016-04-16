@@ -28,7 +28,7 @@ class MFbpr(object):
         self.num_item = num_item
         self.factors = factors
         self.learning_rate = learning_rate
-        self.reg = theano.shared(value = reg, name = 'reg')
+        self.reg = reg
         
         # user & item latent vectors
         U_init = np.random.normal(loc=init_mean, scale=init_stdev, size=(num_user, factors))
@@ -48,53 +48,36 @@ class MFbpr(object):
                 self.items_of_user[u].add(item)
                 self.num_rating += 1
         
-        # variables for computing gradients
-        u = T.iscalar('u')
-        i_pos = T.iscalar('i_pos')
-        i_neg = T.iscalar('i_neg')
-        vec_u = T.vector('u')
-        vec_i_pos = T.vector('vec_i_pos')
-        vec_i_neg = T.vector('vec_i_neg')
-        vec_u = self.U[u]
-        vec_i_pos = self.V[i_pos]
-        vec_i_neg = self.V[i_neg]
+        # batch variables for computing gradients
+        u = T.lvector('u')
+        i = T.lvector('i')
+        j = T.lvector('j')
         lr = T.scalar('lr')
         
         # loss of the sample
-        y_pos = T.dot(vec_u, vec_i_pos)
-        y_neg = T.dot(vec_u, vec_i_neg)
-        regularizer = self.reg * (T.dot(vec_u, vec_u) +
-                                  T.dot(vec_i_pos, vec_i_pos) +
-                                  T.dot(vec_i_neg, vec_i_neg))
-        loss = regularizer - T.log(T.nnet.sigmoid(y_pos - y_neg))
-        # gradients
-        dU = T.grad(loss, vec_u)
-        dV_pos = T.grad(loss, vec_i_pos)
-        dV_neg = T.grad(loss, vec_i_neg)
-        # SGD step: nested inc_subtensor to support update two subtensors
-        sgd_update = [(self.U, T.inc_subtensor(self.U[u], -lr * dU)),
-                      (self.V, T.inc_subtensor(T.inc_subtensor(self.V[i_pos], -lr * dV_pos)[i_neg], -lr * dV_neg))]
-        self.sgd_step = theano.function([u, i_pos, i_neg, lr], [],
-                                        updates = sgd_update)
+        y_ui = T.dot(self.U[u], self.V[i].T).diagonal()   #1-d vector of diagonal values
+        y_uj = T.dot(self.U[u], self.V[j].T).diagonal()
+        regularizer = self.reg * ((self.U[u] ** 2).sum() +
+                                  (self.V[i] ** 2).sum() +
+                                  (self.V[j] ** 2).sum())
+        loss = regularizer - T.sum(T.log(T.nnet.sigmoid(y_ui - y_uj)))
+        # SGD step
+        self.sgd_step = theano.function([u, i, j, lr], [],
+                                        updates = [(self.U, self.U - lr * T.grad(loss, self.U)),
+                                                   (self.V, self.V - lr * T.grad(loss, self.V))])
         
-    def build_model(self, maxIter, num_thread):
+    def build_model(self, maxIter=100, num_thread=4, batch_size=32):
         # Training process
-        print("Training model now.")
+        print("Training MF-BPR with: learning_rate=%.2f, regularization=%.4f, factors=%d, #epoch=%d, batch_size=%d."
+              %(self.learning_rate, self.reg, self.factors, maxIter, batch_size))
         for iteration in xrange(maxIter):    
             # Each training epoch
             t1 = time.time()
-            for s in xrange(self.num_rating):
-                # sample a user
-                user = np.random.randint(0, self.num_user)
-                # sample a positive item
-                idx = np.random.randint(0, len(self.train[user]))
-                item_pos = self.train[user][idx][0]
-                # uniformly sample a negative item
-                item_neg = np.random.randint(0, self.num_item)
-                while item_neg in self.items_of_user[user]:
-                    item_neg = np.random.randint(0, self.num_item)
-                # perform a SGD step
-                self.sgd_step(user, item_pos, item_neg, self.learning_rate)
+            for s in xrange(self.num_rating / batch_size):
+                # sample a batch of users, positive samples and negative samples 
+                (users, items_pos, items_neg) = self.get_batch(batch_size)
+                # perform a batched SGD step
+                self.sgd_step(users, items_pos, items_neg, self.learning_rate)
             
             # check performance
             t2 = time.time()
@@ -110,6 +93,18 @@ class MFbpr(object):
         return np.inner(self.U_np[u], self.V_np[i])
         #return T.dot(self.U[u], self.V[i])
     
-    def predict_user(self, u):
-        return T.dot(self.V, self.U[u].T)
-    
+    def get_batch(self, batch_size):
+        users, pos_items, neg_items = [], [], []
+        for i in xrange(batch_size):
+            # sample a user
+            u = np.random.randint(0, self.num_user)
+            # sample a positive item
+            i = self.train[u][np.random.randint(0, len(self.train[u]))][0]
+            # sample a negative item
+            j = np.random.randint(0, self.num_item)
+            while j in self.items_of_user[u]:
+                j = np.random.randint(0, self.num_item)
+            users.append(u)
+            pos_items.append(i)
+            neg_items.append(j)
+        return (users, pos_items, neg_items)

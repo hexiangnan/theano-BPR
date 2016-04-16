@@ -5,6 +5,7 @@ Created on Apr 15, 2016
 '''
 from dataloader import LoadRatingFile_HoldKOut
 from MFbpr import MFbpr
+import multiprocessing as mp
 
 if __name__ == '__main__':
     
@@ -18,14 +19,14 @@ if __name__ == '__main__':
     
     # MFbpr parameters
     factors = 10
-    learning_rate = 0.05
+    learning_rate = 0.01
     reg = 0.01
     init_mean = 0
     init_stdev = 0.01
-    maxIter = 1000
-    num_thread = 4
+    maxIter = 100
+    num_thread = mp.cpu_count()
     
     # Run model
     bpr = MFbpr(train, test, num_user, num_item, 
                 factors, learning_rate, reg, init_mean, init_stdev)
-    bpr.build_model(maxIter, num_thread)
+    bpr.build_model(maxIter, num_thread, batch_size=32)
