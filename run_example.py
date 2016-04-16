@@ -1,6 +1,8 @@
 '''
 Created on Apr 15, 2016
 
+An Example to run the MFbpr
+
 @author: he8819197
 '''
 from dataloader import LoadRatingFile_HoldKOut

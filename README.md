@@ -1,11 +1,19 @@
 # theano-BPR
-Implement BPR (Bayesian Personalized Ranking) with Theano
+Using Theano to implement the matrix factorization with BPR ranking loss, as described in:
+
+Steffen Rendle, et al. BPR: Bayesian personalized ranking from implicit feedback. UAI'09
+
 
 Required softwares: numpy, theano
-Evaluation: Hit Ratio and NDCG by Hold-1-out evaluation
+
+Evaluation: TopK recommendation (hold-1-out evaluation), with measures Hit Ratio and NDCG
+
 Optimizer: batched SGD
 
 To run an example: 
+
   python run_example.py
+
+
   
 Welcome any comments for improving the efficency! 
