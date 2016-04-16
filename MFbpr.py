@@ -77,10 +77,10 @@ class MFbpr(object):
         self.sgd_step = theano.function([u, i_pos, i_neg, lr], [],
                                         updates = sgd_update)
         
-    def build_model(self, maxIter):
+    def build_model(self, maxIter, num_thread):
         # Training process
         print("Training model now.")
-        for iteration in xrange(maxIter): 
+        for iteration in xrange(maxIter):    
             # Each training epoch
             t1 = time.time()
             for s in xrange(self.num_rating):
@@ -93,17 +93,23 @@ class MFbpr(object):
                 item_neg = np.random.randint(0, self.num_item)
                 while item_neg in self.items_of_user[user]:
                     item_neg = np.random.randint(0, self.num_item)
-                # perform an SGD step
+                # perform a SGD step
                 self.sgd_step(user, item_pos, item_neg, self.learning_rate)
-                
-            # check performance
-            print("Iter=%d [%.1f s]" %(iteration, time.time() - t1))
-            topK = 100
-            t1 = time.time()
-            (hits, ndcgs) = evaluate_model(self, self.test, topK)
-            print("HitRatio@%d = %.3f, NDCG@%d = %.3f [%.1f s] \n" 
-                  %(topK, np.array(hits).mean(), topK, np.array(ndcgs).mean(), time.time()-t1))
             
+            # check performance
+            t2 = time.time()
+            self.U_np = self.U.eval()
+            self.V_np = self.V.eval()
+            topK = 100
+            (hits, ndcgs) = evaluate_model(self, self.test, topK, num_thread)
+            print("Iter=%d [%.1f s] HitRatio@%d = %.3f, NDCG@%d = %.3f [%.1f s]" 
+                  %(iteration, t2-t1, topK, np.array(hits).mean(), topK, np.array(ndcgs).mean(), time.time()-t2))
+
+                            
     def predict(self, u, i):
-        return T.dot(self.U[u], self.V[i])
+        return np.inner(self.U_np[u], self.V_np[i])
+        #return T.dot(self.U[u], self.V[i])
+    
+    def predict_user(self, u):
+        return T.dot(self.V, self.U[u].T)
     
