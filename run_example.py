@@ -3,7 +3,7 @@ Created on Apr 15, 2016
 
 An Example to run the MFbpr
 
-@author: he8819197
+@author: hexiangnan
 '''
 from dataloader import LoadRatingFile_HoldKOut
 from MFbpr import MFbpr
