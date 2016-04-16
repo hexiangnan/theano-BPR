@@ -19,8 +19,10 @@ More details about the evaluation can be found in:
 > Xiangnan He, et al. [Fast Matrix Factorization for Online Recommendation
 with Implicit Feedback](http://www.comp.nus.edu.sg/~xiangnan/papers/sigir16-eals-draft.pdf) SIGIR'16
 
-** Welcome any comments for improving the efficency! **
+**Welcome any comments for improving the efficency!**
 
-Author: Xiangnan He (http://www.comp.nus.edu.sg/~xiangnan/)
+## Author:
+
+Xiangnan He (http://www.comp.nus.edu.sg/~xiangnan/)
 
 Contact: xiangnanhe@gmail.com
